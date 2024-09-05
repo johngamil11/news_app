@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:news_app/api/api_manager.dart';
 import 'package:news_app/app_colors.dart';
+import 'package:news_app/home/category_details/category_details.dart';
+import 'package:news_app/home/category_details/category_fragment.dart';
+import 'package:news_app/home/settings/settings.dart';
 import 'package:news_app/home/tabs/tabs_widget.dart';
 import 'package:news_app/model/SourceResponse.dart';
+import 'package:news_app/model/category.dart';
+
+import 'drawer/home_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String RouteName = 'home_screen' ;
@@ -27,46 +33,44 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
         appBar: AppBar(
           toolbarHeight: MediaQuery.of(context).size.height*0.09,
-          title: Text('News App', style: Theme.of(context).textTheme.titleLarge ),
-        ),
-        body: FutureBuilder<SourceResponse?>(
-            future: ApiManager.getSources(),
-            builder: (context ,snapshot ){
-              if (snapshot.connectionState == ConnectionState.waiting ){
-                return Center(child: CircularProgressIndicator(
-                  color: AppColors.green,
-                ),);
-              } else if (snapshot.hasError){
-                return Column(
-                  children: [
-                    Text('Something went wrong'),
-                    ElevatedButton(onPressed: (){
-                      ApiManager.getSources();
-                      setState(() {
+            title: Text(
+                selectedNewItem == HomeDrawer.settings
+                    ? 'Settings'
+                    : selectedCategory == null
+                        ? 'News App'
+                        : selectedCategory!.title,
+                style: Theme.of(context).textTheme.titleLarge),
+          ),
+          drawer: Drawer(
+            child: HomeDrawer(
+              onSideFunctionClick: onSideMenuItemClick,
+            ),
+          ),
+          body: selectedNewItem == HomeDrawer.settings
+              ? Settings()
+              : selectedCategory == null
+                  ? CategoryFragment(
+                      onCategoryItemClick: onCategoryItemClick,
+                    )
+                  : CategoryDetails(
+                      category: selectedCategory!,
+                    ))
+    ]);
+  }
 
-                      });
-                    }, child: Text('Try again'))
-                  ],
-                );
-              }
-              ///server => success , error
-              if (snapshot.data!.status != 'ok'){
-                return Column(
-                  children: [
-                    Text(snapshot.data!.message!),
-                    ElevatedButton(onPressed: (){
-                      ApiManager.getSources();
-                    }, child: Text('Try again'))
-                  ],
-                );
-              }
-              var sourcesList = snapshot.data!.sources! ;
-              return TabsWidget(sourceList: sourcesList);
+  Category? selectedCategory;
 
-            }),
+  void onCategoryItemClick(Category newCategory) {
+    selectedCategory = newCategory;
+    setState(() {});
+  }
 
-    )
-      ]
-    );
+  int selectedNewItem = HomeDrawer.categories;
+
+  void onSideMenuItemClick(int newSideMenuItem) {
+    selectedNewItem = newSideMenuItem;
+    Navigator.pop(context);
+    selectedCategory = null;
+    setState(() {});
   }
 }
